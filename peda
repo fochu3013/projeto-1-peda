@@ -1,0 +1,220 @@
+class Deque:
+    
+    def __init__(self, N):
+        self._N = N  # Tamanho máximo do deque.
+        self._data = [None] * N  # Lista de tamanho máximo N.
+        self._front = 0  # Posição corrente da frente/início (vetor inicial).
+        self._top = 0  # Posição corrente do topo/fim (vetor inicial).
+        self._ptr = 0  # Posição atual do ponteiro (posição no deque).
+        self._size = 0  # Tamanho corrente do deque.
+
+    def __str__(self):
+        if self.is_empty():
+            return "Deque vazio"
+        else:
+            lista_temp = []
+            strSize = 0
+            self.rewind()
+            while strSize < self._size:
+                lista_temp.append(self.next())
+                strSize += 1
+            return str(lista_temp)
+
+    def get_size(self):
+        return self._size
+
+    def rewind(self):
+        self._ptr = self._front
+
+    def next(self):
+        if self.is_empty():
+            return None
+        else:
+            e = self._data[self._ptr]
+            self._ptr += 1
+            if self._ptr == self._N:  # Circula se passou do fim
+                self._ptr = 0
+            return e
+
+    def is_empty(self):
+        return self._size == 0
+
+    def is_full(self):
+        return self._size == self._N
+
+    def add_first(self, e):
+        if self.is_full():
+            raise Exception("Deque cheio!")
+        if self.is_empty():
+            self._data[self._front] = e
+        else:
+            self._front -= 1
+            if self._front == -1:  # Circula para o fim do vetor
+                self._front = self._N - 1
+            self._data[self._front] = e
+        self._size += 1
+
+    def add_last(self, e):
+        if self.is_full():
+            raise Exception("Deque cheio!")
+        if self.is_empty():
+            self._data[self._front] = e
+        else:
+            self._top += 1
+            if self._top == self._N:  # Circula para o início do vetor
+                self._top = 0
+            self._data[self._top] = e
+        self._size += 1
+
+    def delete_first(self):
+        if self.is_empty():
+            raise Exception('Deque vazio!')
+        else:
+            e_front = self._data[self._front]
+            self._data[self._front] = None
+            self._size -= 1
+            self._front += 1
+            if self._front == self._N:  # Circula
+                self._front = 0
+            return e_front
+
+    def delete_last(self):
+        if self.is_empty():
+            raise Exception('Deque vazio!')
+        else:
+            e_top = self._data[self._top]
+            self._data[self._top] = None
+            self._size -= 1
+            self._top -= 1
+            if self._top == -1:  # Circula
+                self._top = self._N - 1
+            return e_top
+
+    def first(self):
+        if self.is_empty():
+            return None
+        else:
+            return self._data[self._front]
+
+    def last(self):
+        if self.is_empty():
+            return None
+        else:
+            return self._data[self._top]
+
+
+class Vagao:
+    def __init__(self, comprimento, peso_total):
+        self.comprimento = comprimento
+        self.peso_total = peso_total
+
+
+class Locomotiva(Vagao):
+    def __init__(self, comprimento, peso_total, potencia):
+        if comprimento < 20 or peso_total < 100 or peso_total > 200 or potencia < 2000 or potencia > 10000:
+            raise ValueError("Locomotiva não atende aos requisitos especificados.")
+        super().__init__(comprimento, peso_total)
+        self.potencia = potencia
+
+
+class VagaoPassageiros(Vagao):
+    def __init__(self, comprimento, peso_total, num_passageiros):
+        if comprimento < 15 or peso_total < 30 or peso_total > 50 or num_passageiros > 30:
+            raise ValueError("Vagão de passageiros não atende aos requisitos especificados.")
+        super().__init__(comprimento, peso_total)
+        self.num_passageiros = num_passageiros
+
+
+class VagaoCarga(Vagao):
+    def __init__(self, comprimento, peso_total, carga_total):
+        if comprimento < 18 or peso_total < 80 or peso_total > 100:
+            raise ValueError("Vagão de carga não atende aos requisitos especificados.")
+        super().__init__(comprimento, peso_total)
+        self.carga_total = carga_total
+
+
+class Composicao(Deque):
+    def __init__(self, N):
+        super().__init__(N)
+
+    def insere_vagao_inicio(self, vagao):
+        self.add_first(vagao)
+
+    def insere_vagao_final(self, vagao):
+        self.add_last(vagao)
+
+    def remove_vagao_inicio(self):
+        return self.delete_first()
+
+    def remove_vagao_final(self):
+        return self.delete_last()
+
+    def num_vagoes(self):
+        return self.get_size()
+
+    def peso_total(self):
+        return sum(vagao.peso_total for vagao in self._data if vagao is not None)
+
+    def comprimento_total(self):
+        espaco_entre_vagoes = 2  # Espaço entre vagões de 2 metros
+        return sum(vagao.comprimento for vagao in self._data if vagao is not None) + espaco_entre_vagoes * (self.num_vagoes() - 1)
+
+    def num_passageiros(self):
+        return sum(vagao.num_passageiros for vagao in self._data if isinstance(vagao, VagaoPassageiros))
+
+    def carga_total(self):
+        return sum(vagao.carga_total for vagao in self._data if isinstance(vagao, VagaoCarga))
+
+
+class ComposicaoFerroviaria(Composicao):
+    def __init__(self, N, hpt_minimo):
+        super().__init__(N)
+        self.hpt_minimo = hpt_minimo
+
+    def potencia_total(self):
+        return sum(vagao.potencia for vagao in self._data if isinstance(vagao, Locomotiva))
+
+    def hpt(self):
+        if self.peso_total() == 0:
+            return None
+        return self.potencia_total() / self.peso_total()
+
+    def verifica_hpt_minimo(self):
+        hpt = self.hpt()
+        if hpt is None:
+            return "Não é possível calcular o HPT quando o peso total é zero."
+        elif hpt < self.hpt_minimo:
+            potencia_faltante = (self.hpt_minimo * self.peso_total()) - self.potencia_total()
+            return f"Potência insuficiente. Potência adicional necessária: {potencia_faltante} kW."
+        else:
+            return "Potência suficiente."
+
+    def diagnostico(self):
+        result = f"Número de vagões: {self.num_vagoes()}\n"
+        result += f"Peso total da composição: {self.peso_total()} toneladas\n"
+        result += f"Comprimento total da composição: {self.comprimento_total()} metros\n"
+        result += f"Número de passageiros: {self.num_passageiros()}\n"
+        result += f"Carga total transportada: {self.carga_total()} toneladas\n"
+        result += f"Potência total da composição: {self.potencia_total()} kW\n"
+        result += self.verifica_hpt_minimo()
+        return result
+
+
+# Exemplo de uso
+if __name__ == "__main__":
+    composicao = ComposicaoFerroviaria(10, 2.0)
+    locomotiva1 = Locomotiva(20, 150, 8700)
+    vagao1 = VagaoCarga(18, 90, 100)
+    vagao2 = VagaoCarga(18, 96, 42)
+    vagao3 = VagaoCarga(18, 100, 11)
+    vagao4 = VagaoPassageiros(15, 43, 2622222)
+    vagao5 = VagaoPassageiros(15, 41, 12)
+    
+    composicao.insere_vagao_final(locomotiva1)
+    composicao.insere_vagao_final(vagao1)
+    composicao.insere_vagao_final(vagao2)
+    composicao.insere_vagao_final(vagao3)
+    composicao.insere_vagao_final(vagao4)
+    composicao.insere_vagao_final(vagao5)
+
+    print(composicao.diagnostico())
